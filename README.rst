@@ -30,14 +30,14 @@
 |
 
 =======
-simodin
+SiModIn
 =======
 
 
     Simulation Model Interface 
 
 
-Interface between simulation models and `brightway25<https://docs.brightway.dev/en/latest/>`.
+Interface between simulation models and `brightway25 <https://docs.brightway.dev/en/latest/>`_.
 
 
 .. _pyscaffold-notes:
