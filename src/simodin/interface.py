@@ -70,7 +70,9 @@ class SimModel(ABC):
         
         '''
         return self.technosphere
-    
+
+# pydantic schema adapted from bw_interface_schemas: 
+# https://github.com/brightway-lca/bw_interface_schemas
 class QuantitativeEdgeTypes(StrEnum):
     technosphere = "technosphere"
     biosphere = "biosphere"
@@ -161,6 +163,7 @@ class modelInterface(BaseModel):
             flow.amount = self.model.technosphere[name].amount
 
     def setup_link(self):
+
         self.technosphere= self.model.technosphere
         self.biosphere= self.model.biosphere
 
@@ -173,10 +176,13 @@ class modelInterface(BaseModel):
         
         background_flows={}
         for name, ex in self.technosphere.items():
-            if not ex.functional:
-                if ex.source == self.model:
+            if ex.functional:
+               continue 
+            if ex.source == self.model:
+                if isinstance(ex.target, bd.backends.proxies.Activity):
                     background_flows[name]= {ex.target.id:1}    
-                else:
+            else:
+                if isinstance(ex.source, bd.backends.proxies.Activity):
                     background_flows[name]= {ex.source.id:1}
         #for name, ex in self.biosphere.items():
         #    if ex.source == self.model:
@@ -207,6 +213,11 @@ class modelInterface(BaseModel):
             for name, ex  in self.technosphere.items():
                 
                 if ex.functional:
+                    continue
+                #check if technosphere is linked to a bw activity
+                if not isinstance(ex.target, bd.backends.proxies.Activity) and ex.source == self.model:
+                    continue
+                if not isinstance(ex.source, bd.backends.proxies.Activity) and ex.target == self.model:
                     continue
                 score=self.lca.scores[(cat, name)]*self._get_flow_value(ex)
                 
@@ -282,62 +293,70 @@ class modelInterface(BaseModel):
             bd.Database(database).register() 
         
         for fun_name, fun_ex in self.technosphere.items():
-            if fun_ex.functional:
-                now= datetime.datetime.now()
-                if identifier==None:
-                    code= f'{self.name}_{fun_name}_{now}'
+            if not fun_ex.functional:
+                continue
+            now= datetime.datetime.now()
+            if identifier==None:
+                code= f'{self.name}_{fun_name}_{now}'
 
-                else:
-                    code= f'{fun_name}_{identifier}'
-                node = bd.Database(database).new_node(
-                    name= fun_name,
-                    unit= fun_ex.model_unit,
-                    code= code,
-                    **self.model.params
-                )
-                node.save()
+            else:
+                code= f'{fun_name}_{identifier}'
+            node = bd.Database(database).new_node(
+                name= fun_name,
+                unit= fun_ex.model_unit,
+                code= code,
+                **self.model.params
+            )
+            node.save()
 
-                for name, ex in self.technosphere.items():
-                    if not ex.functional:
-                        allocated_amount= (self._get_flow_value(ex)*fun_ex.allocationfactor / 
-                                           self._get_flow_value(fun_ex))
-                        #dataset correction for original linked dataset.
-                        if ex.dataset_correction != None:
-                            allocated_amount= allocated_amount*ex.dataset_correction
-                        if ex.target == self.model:
-                            node.new_exchange(
-                                input= ex.source,
-                                amount=allocated_amount,
-                                type = 'technosphere',
-                            ).save()
-                        elif ex.source == self.model:
-                            node.new_exchange(
-                                input= ex.target,
-                                amount=allocated_amount,
-                                type = 'technosphere',
-                            ).save()
+            for name, ex in self.technosphere.items():
+                if ex.functional:
+                    continue
+                #check if technosphere is linked to a bw activity
+                if not isinstance(ex.target, bd.backends.proxies.Activity) and ex.source == self.model:
+                    continue
+                if not isinstance(ex.source, bd.backends.proxies.Activity) and ex.target == self.model:
+                    continue
+                
+                allocated_amount= (self._get_flow_value(ex)*fun_ex.allocationfactor / 
+                                    self._get_flow_value(fun_ex))
+                #dataset correction for original linked dataset.
+                if ex.dataset_correction != None:
+                    allocated_amount= allocated_amount*ex.dataset_correction
+                if ex.target == self.model:
+                    node.new_exchange(
+                        input= ex.source,
+                        amount=allocated_amount,
+                        type = 'technosphere',
+                    ).save()
+                elif ex.source == self.model:
+                    node.new_exchange(
+                        input= ex.target,
+                        amount=allocated_amount,
+                        type = 'technosphere',
+                    ).save()
 
-                for name, ex in self.biosphere.items():
-                    
-                    allocated_amount= (self._get_flow_value(ex)*fun_ex.allocationfactor / 
-                                        self._get_flow_value(fun_ex))
-                    if ex.target == self.model:
-                        node.new_exchange(
-                            input= ex.source,
-                            amount=allocated_amount,
-                            type = 'biosphere',
-                        ).save()
-                    elif ex.source == self.model:
-                        node.new_exchange(
-                            input= ex.target,
-                            amount=allocated_amount,
-                            type = 'biosphere',
-                        ).save()            
-                node.new_exchange(
-                    input=node,
-                    amount= 1,
-                    type = 'production',
-                ).save()
+            for name, ex in self.biosphere.items():
+                
+                allocated_amount= (self._get_flow_value(ex)*fun_ex.allocationfactor / 
+                                    self._get_flow_value(fun_ex))
+                if ex.target == self.model:
+                    node.new_exchange(
+                        input= ex.source,
+                        amount=allocated_amount,
+                        type = 'biosphere',
+                    ).save()
+                elif ex.source == self.model:
+                    node.new_exchange(
+                        input= ex.target,
+                        amount=allocated_amount,
+                        type = 'biosphere',
+                    ).save()            
+            node.new_exchange(
+                input=node,
+                amount= 1,
+                type = 'production',
+            ).save()
         
         return code
     
