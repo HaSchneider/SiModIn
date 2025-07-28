@@ -13,15 +13,11 @@
     .. image:: https://img.shields.io/pypi/v/simodin.svg
         :alt: PyPI-Server
         :target: https://pypi.org/project/simodin/
-    .. image:: https://img.shields.io/conda/vn/conda-forge/simodin.svg
-        :alt: Conda-Forge
-        :target: https://anaconda.org/conda-forge/simodin
+
     .. image:: https://pepy.tech/badge/simodin/month
         :alt: Monthly Downloads
         :target: https://pepy.tech/project/simodin
-    .. image:: https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Twitter
-        :alt: Twitter
-        :target: https://twitter.com/simodin
+
 
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
     :alt: Project generated with PyScaffold
@@ -39,11 +35,3 @@ SiModIn
 
 Interface between simulation models and `brightway25 <https://docs.brightway.dev/en/latest/>`_.
 
-
-.. _pyscaffold-notes:
-
-Note
-====
-
-This project has been set up using PyScaffold 4.6. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
