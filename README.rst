@@ -24,4 +24,19 @@ SiModIn
 
 Interface between simulation models and `brightway25 <https://docs.brightway.dev/en/latest/>`_.
 
+
+To use a SiModIn model:
+
+.. code-block:: python
+
+   from simodin import interface as link
+   import my_model
+   model = my_model(name= 'my SiModIn model')
+   model.init_model()
+   model.calculate_model()
+   model.technosphere
+
+   my_interface = link.modelInterface(model= model, name= 'my SiModIn interface')
+
+
 Further examples how to use SiModIn can be found `here <https://github.com/HaSchneider/SiModIn/tree/main/src/simodin/Examples>`_
