@@ -44,6 +44,7 @@ To use the existing SiModIn model, import and instantiate the SimModel class:
 Than inititate the model and calculate it. 
 
 .. code-block:: python
+
    my_model.init_model()
    my_model.calculate_model()
 
