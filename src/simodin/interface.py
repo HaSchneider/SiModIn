@@ -190,7 +190,8 @@ class modelInterface(BaseModel):
         #    else:
         #        background_flows[name]= {ex.source.id:1}
         self.method_config= {'impact_categories':self.methods}
-
+        if len(background_flows)==0:
+             raise ValueError("Technosphere dict got no technosphere flows with an assigned brightway25 activity. LCA calculation abborted.")
         data_objs = bd.get_multilca_data_objs(background_flows, self.method_config)
         self.lca = bc.MultiLCA(demands=background_flows,
                     method_config=self.method_config, 
