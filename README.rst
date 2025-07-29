@@ -28,9 +28,10 @@ Interface between simulation models and `brightway25 <https://docs.brightway.dev
 Getting started
 =================
 
-To use an existing SiModIn model, import the model and instantiate it. 
+The basic usage of SiModIn will be presented for an Tespy powerplant model from the offical `Tespy documentation <https://tespy.readthedocs.io/en/main/tutorials/pygmo_optimization.html>`_.
 
-This will be shown for an Tespy model from the `Tespy documentation <https://tespy.readthedocs.io/en/main/tutorials/pygmo_optimization.html>`_:
+
+To use the existing SiModIn model, import and instantiate the SimModel class: 
 
 .. code-block:: python
 
@@ -38,13 +39,18 @@ This will be shown for an Tespy model from the `Tespy documentation <https://tes
    from tespy_example import tespy_model
 
    my_model= tespy_model('powerplant')
-   my_model.init_model()
+   
 
-Than inititate the model and calculate it. Afterwards, create the technosphere dictionary and assign the model to an modelInterface instance.    
+Than inititate the model and calculate it. 
+
+.. code-block:: python
+   my_model.init_model()
+   my_model.calculate_model()
+
+Create the technosphere dictionary and pass the model to an modelInterface instance.    
 
 .. code-block:: python
 
-   my_model.calculate_model()
    my_model.technosphere
 
    my_interface= link.modelInterface('tespy powerplant',my_model)
