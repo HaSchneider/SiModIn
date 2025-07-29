@@ -184,11 +184,7 @@ class modelInterface(BaseModel):
             else:
                 if isinstance(ex.source, bd.backends.proxies.Activity):
                     background_flows[name]= {ex.source.id:1}
-        #for name, ex in self.biosphere.items():
-        #    if ex.source == self.model:
-        #        background_flows[name]= {ex.target.id:1}    
-        #    else:
-        #        background_flows[name]= {ex.source.id:1}
+
         self.method_config= {'impact_categories':self.methods}
         if len(background_flows)==0:
              raise ValueError("Technosphere dict got no technosphere flows with an assigned brightway25 activity. LCA calculation abborted.")
@@ -204,7 +200,6 @@ class modelInterface(BaseModel):
         '''
         Calculate the impact
         '''
-        #TODO add biosphere flows
         if not hasattr(self, 'lca'):
             self.calculate_background_impact()
         self.impact_allocated = {}
@@ -225,8 +220,15 @@ class modelInterface(BaseModel):
                 if ex.dataset_correction != None:
                     score*= ex.dataset_correction  
                 self.impact[cat] += score
-            #for name, ex in self.biosphere.items():
-            #    self.impact[cat] += self.lca.scores[(cat, name)]*self._get_flow_value(ex)
+            for name, ex in self.biosphere.items():
+                cf_list=bd.Method(cat).load()
+                if ex.source == self.model:
+                    factor= [flow for flow in cf_list if flow[0]== ex.target.id][0][1]
+                
+                if ex.target== self.model:
+                    factor= [flow for flow in cf_list if flow[0]== ex.source.id][0][1]
+
+                self.impact[cat] += self._get_flow_value(ex)*factor
 
             self.impact_allocated[cat]={}
             #if isinstance(self.functional_unit, dict):
