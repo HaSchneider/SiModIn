@@ -9,6 +9,12 @@ import warnings
 from enum import StrEnum
 
 class SimModel(ABC):
+    """Class containing a simulation model.
+
+    Args:
+        **model_params: Parameters for the simulation Model.
+    
+    """
     def __init__(self, name, **model_params):
         self.name = name
         self.ureg=pint.UnitRegistry()
@@ -17,36 +23,34 @@ class SimModel(ABC):
     
     @abstractmethod
     def init_model(self, **model_params):
-        '''
-        Abstract method to initiate the model. 
+        '''Abstract method to initiate the model.
+
+        Args:
+            **model_params: Parameters for the simulation Model. 
         '''
         
-        self.params= model_params
+        self.params= self.params|model_params
 
     @abstractmethod
     def calculate_model(self, **model_params):
-        '''
-        Abstract method to calculate the model based on the parameters provided.
+        '''Abstract method to calculate the model based on the parameters provided.
         '''
         pass
 
     @abstractmethod
     def recalculate_model(self, **model_params):
-        '''
-        Abstract method to recalculate the model based on the parameters provided.
+        '''Abstract method to recalculate the model based on the parameters provided.
         '''
         pass
     
     @property
     @abstractmethod
     def technosphere(self):
-        '''
-        Abstract property to define the model technosphere flows. 
-        Creates a technosphere dict, wich nedds to be filled by the modelInterface class with brightway datasets.
+        '''Abstract property to define the model technosphere flows. 
+        Creates a dict of technosphere flows, wich nedds to be filled by the modelInterface class with brightway datasets.
 
-        Returns:
-        Dict of the schema:
-        technosphere= {'model_flow name': link.technosphere_flow }
+        Dict of the schema: 
+            {'model_flow name': simodin.interface.technosphere_edge }
         '''
         return {}
     
@@ -56,9 +60,8 @@ class SimModel(ABC):
         '''
         Abstract property to define the model biosphere flows. 
         
-        Returns:
         Dict of the schema:
-        biosphere= {'model_flow name': link.biosphere_flow }
+            {'model_flow name': simodin.interface.biosphere_edge }
         '''
         return {}
     
@@ -113,7 +116,7 @@ class QuantitativeEdge(Edge):
     dataset_correction: float | None = None
 
 class technosphere_edge(QuantitativeEdge):
-    
+    """A technosphere flow."""
     functional: bool = False
     edge_type: Literal[QuantitativeEdgeTypes.technosphere] = (
         QuantitativeEdgeTypes.technosphere
@@ -124,7 +127,7 @@ class technosphere_edge(QuantitativeEdge):
     type: technosphereTypes
 
 class biosphere_edge(QuantitativeEdge):
-    
+    """A biosphere flow."""
     edge_type: Literal[QuantitativeEdgeTypes.biosphere] = (
         QuantitativeEdgeTypes.biosphere
     )
@@ -133,7 +136,15 @@ class biosphere_edge(QuantitativeEdge):
 
 
 class modelInterface(BaseModel):
-    '''class for interface external activity models with brightway25'''
+    '''Class for interface external activity models with brightway25.
+    
+    Attributes:
+    ----------
+        name: Name of the model.
+        model: The Simulation model.
+    
+    
+    '''
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     model: SimModel
@@ -197,8 +208,8 @@ class modelInterface(BaseModel):
         self.lca.lcia()
     
     def calculate_impact(self):
-        '''
-        Calculate the impact
+        '''Calculate the impact and returns the allocated impact.
+
         '''
         if not hasattr(self, 'lca'):
             self.calculate_background_impact()
@@ -243,6 +254,15 @@ class modelInterface(BaseModel):
         return self.impact_allocated
     
     def _get_flow_value(self, ex):
+        '''Get the correct amount value and transform to the correct unit if possible.
+
+        Args:
+            ex: Exchange flow
+        
+        Returns:
+            Amount: Amount as float.
+          
+        '''
         if callable(ex.amount):
             amount=ex.amount()
         else:
@@ -286,6 +306,14 @@ class modelInterface(BaseModel):
             return amount
 
     def export_to_bw(self, database=None, identifier=None):
+        '''Export the model to a brightway dataset.
+        Creates the database simulation_model_db if no database is passed. Creates a identifier by the model name, functional unit flow name, and a time stamp if none is passed.
+
+        Args:
+            database: Database in which the model activity should be exported.
+            identifier: code for the brightway activity
+        
+        '''
         if not hasattr(self, 'impact_allocated'):
             self.calculate_impact()
 
