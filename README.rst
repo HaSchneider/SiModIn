@@ -35,8 +35,8 @@ To use the existing SiModIn model, import and instantiate the SimModel class:
 
 .. code-block:: python
 
+   from simodin.Examples.tespy.power_plant.SimModel_powerplant import tespy_model
    from simodin import interface as link
-   from tespy_example import tespy_model
 
    my_model= tespy_model('powerplant')
    
