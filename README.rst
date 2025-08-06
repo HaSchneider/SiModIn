@@ -41,7 +41,7 @@ To use the existing SiModIn model, import and instantiate the SimModel class:
    my_model= tespy_model('powerplant')
    
 
-Than inititate the model and calculate it. 
+Then inititate the model and calculate it. 
 
 .. code-block:: python
 
@@ -56,7 +56,7 @@ Create the technosphere dictionary and pass the model to an modelInterface insta
 
    my_interface= link.modelInterface('tespy powerplant',my_model)
 
-For LCA calculation, the needed brightway25 dataset needs to be linked to the technosphere flows:
+For LCA calculation, the needed brightway25 dataset needs to be assigned to the technosphere flows:
 
 .. code-block:: python
 
