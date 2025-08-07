@@ -18,11 +18,25 @@
 SiModIn
 =======
 
+   **Si**\ mulation **Mod**\ el **In**\ terface 
+    Interface between simulation models and `brightway25 <https://docs.brightway.dev/en/latest/>`_.
 
-    Simulation Model Interface 
 
+**SiModIn** can be used to:
 
-Interface between simulation models and `brightway25 <https://docs.brightway.dev/en/latest/>`_.
+* Create simulation based brightway25 datasets.
+* Calculate the impact of your models.
+* Provide your simulation models for LCA studies.
+
+=================
+Installation
+=================
+
+Install SiModIn from PyPi:
+
+.. code-block:: python
+
+   pip install simodin
 
 =================
 Getting started
