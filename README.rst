@@ -4,15 +4,17 @@
     .. image:: https://readthedocs.org/projects/simodin/badge/?version=latest
         :alt: ReadTheDocs
         :target: https://simodin.readthedocs.io/en/stable/
-    .. image:: https://img.shields.io/pypi/v/simodin.svg
-        :alt: PyPI-Server
-        :target: https://pypi.org/project/simodin/
+    .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
+        :alt: Project generated with PyScaffold
+        :target: https://pyscaffold.org/
 
-   .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
-       :alt: Project generated with PyScaffold
-       :target: https://pyscaffold.org/
 
-|
+.. image:: https://img.shields.io/pypi/v/simodin.svg
+    :alt: PyPI-Server
+    :target: https://pypi.org/project/simodin/
+
+
+
 
 =======
 SiModIn
