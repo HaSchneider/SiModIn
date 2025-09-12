@@ -37,16 +37,7 @@ class SimModel(ABC):
         self.params= self.params|model_params
 
     
-    def calculate_model_decorator(func):
-        '''Decorator to update the flows after model is calculated.
-        '''
-        @wraps(func)
-        def wrapper(self, **model_params):
-            func(self, **model_params)
-            self.define_flows()
-        return wrapper
-    
-    
+    '''
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         # Wenn Subklassen foo() wirklich selbst implementieren,
@@ -55,7 +46,7 @@ class SimModel(ABC):
             cls.recalculate_model = call_after("define_flows")(cls.recalculate_model)
         if "calculate_model" in cls.__dict__:
             cls.calculate_model = call_after("define_flows")(cls.calculate_model)
-
+    '''
 
     @abstractmethod
     def calculate_model(self, **model_params):
@@ -63,11 +54,13 @@ class SimModel(ABC):
         '''
         pass
 
-    @abstractmethod
     def recalculate_model(self, **model_params):
-        '''Abstract method to recalculate the model based on the parameters provided.
+        '''Method to recalculate the model based on the parameters provided. 
+        Executes a new initialising and calculation of the model. Might be 
+        overwritten if a better and faster way to recalculate the model is possible.
         '''
-        pass
+        self.init_model(**model_params)
+        self.calculate_model(**model_params)
 
     @property
     def technosphere(self):
@@ -107,22 +100,8 @@ class SimModel(ABC):
         '''
         self._biosphere= biosphere_dict
     
-    def init_flows(func):
-        '''Decorator to initialize the flows to assure, that technsphere and biosphere exist.
-        '''
-        @wraps(func)
-        def wrapper(self):
-            if not hasattr(self, 'biosphere'):
-                self.biosphere={}
-            if not  hasattr(self, 'technosphere'):
-                self.technosphere={}
-            func()
-        return wrapper
-    
-
     
     @abstractmethod
-    @init_flows
     def define_flows(self):
         '''Abstract method to define the model flows.
     
@@ -181,7 +160,7 @@ class QuantitativeEdge(Edge):
     """An quantitative edge linking two nodes in the graph."""
 
     edge_type: QuantitativeEdgeTypes
-    amount: Union[pint.Quantity, float,Callable]
+    amount: Callable # Union[pint.Quantity, float,Callable]
     uncertainty_type: int | None = None
     loc: float | None = None
     scale: float | None = None
@@ -191,6 +170,7 @@ class QuantitativeEdge(Edge):
     negative: bool | None = None
     description: Union[str, dict[str, str], None] = None
     dataset_correction: float | None = None
+
 
 class technosphere_edge(QuantitativeEdge):
     """A technosphere flow."""
@@ -242,19 +222,14 @@ class modelInterface(BaseModel):
     def __init__(self, name, model):
         super().__init__(name=name, model=model)
         #self.name = name
-        self.technosphere= self.model._technosphere
-        self.biosphere= self.model._biosphere
+        #self.technosphere= self.model._technosphere
+        #self.biosphere= self.model._biosphere
         self.params = self.model.params
         self.ureg = self.model.ureg
 
-    def update_flows(self):
-        for name,flow   in self.technosphere.items():
-            flow.amount = self.model._technosphere[name].amount
-
-    def setup_link(self):
-
-        self.technosphere= self.model._technosphere
-        self.biosphere= self.model._biosphere
+    #def setup_link(self):
+    #    self.technosphere= self.model._technosphere
+    #    self.biosphere= self.model._biosphere
 
     def add_dataset(self, flow_name, dataset):
         '''Link a brightway25 dataset to a model flow.
@@ -264,21 +239,21 @@ class modelInterface(BaseModel):
             dataset: Brightway25 dataset to be linked.
         
         '''
-        if flow_name in self.technosphere:
+        if flow_name in self.model._technosphere:
             if not isinstance(dataset, bd.backends.proxies.Activity):
                 raise ValueError(f'Dataset {dataset} is not a valid brightway25 activity.')
-            if self.technosphere[flow_name].target == self.model:
-                self.technosphere[flow_name].source= dataset
-            elif self.technosphere[flow_name].source == self.model:
-                self.technosphere[flow_name].target= dataset
+            if self.model._technosphere[flow_name].target == self.model:
+                self.model._technosphere[flow_name].source= dataset
+            elif self.model._technosphere[flow_name].source == self.model:
+                self.model._technosphere[flow_name].target= dataset
             
-        elif flow_name in self.biosphere:
+        elif flow_name in self.model._biosphere:
             if not isinstance(dataset, bd.backends.proxies.Activity):
                 raise ValueError(f'Dataset {dataset} is not a valid brightway25 biosphere exchange.')
-            if self.biosphere[flow_name].target == self.model:
-                self.biosphere[flow_name].source= dataset
-            elif self.biosphere[flow_name].source == self.model:
-                self.biosphere[flow_name].target= dataset
+            if self.model._biosphere[flow_name].target == self.model:
+                self.model._biosphere[flow_name].source= dataset
+            elif self.model._biosphere[flow_name].source == self.model:
+                self.model._biosphere[flow_name].target= dataset
             
         else:
             raise ValueError(f'Flow {flow_name} not found in technosphere or biosphere.')
@@ -287,11 +262,11 @@ class modelInterface(BaseModel):
         '''
         Calculate the background impact based on the parameters provided.
         '''
-        if self.technosphere is None:
+        if self.model._technosphere is None:
             raise ValueError("technosphere dict not created. Define and call 'link_technosphere' first.")
         
         background_flows={}
-        for name, ex in self.technosphere.items():
+        for name, ex in self.model._technosphere.items():
             if ex.functional:
                continue 
             if ex.source == self.model:
@@ -318,7 +293,7 @@ class modelInterface(BaseModel):
         '''Calculate the impact and returns the allocated impact.
 
         '''
-        self.update_flows()
+        
         if not hasattr(self, 'lca'):
             self.calculate_background_impact()
         self.impact_allocated = {}
@@ -327,7 +302,7 @@ class modelInterface(BaseModel):
         for cat in self.method_config['impact_categories']:
             self.impact[cat] = 0
             self.impact_dissag[cat]={}
-            for name, ex  in self.technosphere.items():
+            for name, ex  in self.model._technosphere.items():
                 
                 if ex.functional:
                     continue
@@ -343,7 +318,7 @@ class modelInterface(BaseModel):
                 self.impact[cat] += score
 
                 self.impact_dissag[cat][ex.name]=score
-            for name, ex in self.biosphere.items():
+            for name, ex in self.model._biosphere.items():
                 cf_list=bd.Method(cat).load()
                 if ex.source == self.model:
                     factor= [flow for flow in cf_list if flow[0]== ex.target.id]
@@ -357,7 +332,7 @@ class modelInterface(BaseModel):
             self.impact_allocated[cat]={}
             # for functional unit:
             #if isinstance(self.functional_unit, dict):
-            for name, ex in self.technosphere.items():
+            for name, ex in self.model._technosphere.items():
                 if not ex.functional:
                     continue
                 else:
@@ -381,6 +356,8 @@ class modelInterface(BaseModel):
             amount=ex.amount()
         else:
             amount= ex.amount
+            warnings.warn(f"No unit check possible for functional flow {ex.name}. Provide the desired output unit in 'technosphere_edge.model_unit' property.",UserWarning)
+            
         # check for unit and transform it in the correct unit if possible.
         # get dataset unit:
         if  ex.target!= None and ex.source!= None:
@@ -447,7 +424,7 @@ class modelInterface(BaseModel):
         if database not in bd.databases:
             bd.Database(database).register() 
         
-        for fun_name, fun_ex in self.technosphere.items():
+        for fun_name, fun_ex in self.model._technosphere.items():
             if not fun_ex.functional:
                 continue
             now= datetime.datetime.now()
@@ -464,7 +441,7 @@ class modelInterface(BaseModel):
             )
             node.save()
 
-            for name, ex in self.technosphere.items():
+            for name, ex in self.model._technosphere.items():
                 if ex.functional:
                     continue
                 #check if technosphere is linked to a bw activity
@@ -491,7 +468,7 @@ class modelInterface(BaseModel):
                         type = 'technosphere',
                     ).save()
 
-            for name, ex in self.biosphere.items():
+            for name, ex in self.model._biosphere.items():
                 
                 allocated_amount= (self._get_flow_value(ex)*fun_ex.allocationfactor / 
                                     self._get_flow_value(fun_ex))
