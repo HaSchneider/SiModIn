@@ -22,7 +22,7 @@ class SimModel(ABC):
         self.ureg=pint.UnitRegistry()
         self.params= model_params
         self.location = 'GLO'
-        self.init_model()
+        self.init_model(**model_params)
         self.define_flows()
         self.converges= False
 
@@ -207,8 +207,8 @@ class modelInterface(BaseModel):
     model: SimModel
     name: str
 
-    technosphere: Dict[str, technosphere_edge]={}
-    biosphere: Dict[str, biosphere_edge]={}
+    #technosphere: Dict[str, technosphere_edge]={}
+    #biosphere: Dict[str, biosphere_edge]={}
     params: Optional[Dict[str, Union[float, int, bool, str]]]=None
     methods: list=[]
     converged: bool= False
