@@ -22,39 +22,27 @@ def extract_technosphere_flows(SimModel: link.SimModel, model: Network):
                 name = comp.label,
                 source=SimModel,
                 target= None,
-                amount = (SimModel.ureg.Quantity(comp.inl[0].m.val,
-                                                comp.inl[0].m.unit) 
-                                                * SimModel.ureg.hour
-                                                ).to('kg'),
+                amount = lambda:(comp.inl[0].m._val * model.units.ureg.hour).to('kg'),
                 type= link.technosphereTypes.output)
         elif isinstance(comp, Source):
             technosphere[comp.label]=link.technosphere_edge(
                 name = comp.label,
                 source=None,
                 target= SimModel,
-                amount = (SimModel.ureg.Quantity(comp.outl[0].m.val,
-                                                comp.outl[0].m.unit)
-                                                * SimModel.ureg.hour
-                                                ).to('kg'),
+                amount = lambda:(comp.outl[0].m._val* model.units.ureg.hour).to('kg'),
                 type= link.technosphereTypes.input)
         elif isinstance(comp, PowerSink):
             technosphere[comp.label]=link.technosphere_edge(
                 name = comp.label,
                 source=SimModel,
                 target= None,
-                amount = (SimModel.ureg.Quantity(comp.power_inl[0].E.val,
-                                                comp.power_inl[0].E.unit) 
-                                                * SimModel.ureg.hour
-                                                ).to('MJ'),
+                amount = lambda:(comp.power_inl[0].E._val* model.units.ureg.hour).to('MJ'),
                 type= link.technosphereTypes.output)
         elif isinstance(comp, PowerSource):
             technosphere[comp.label]=link.technosphere_edge(
                 name = comp.label,
                 source=None,
                 target= SimModel,
-                amount = (SimModel.ureg.Quantity(comp.power_outl[0].E.val,
-                                                comp.power_outl[0].E.unit)
-                                                * SimModel.ureg.hour
-                                                ).to('MJ'),
+                amount = lambda:(comp.power_outl[0].E._val* model.units.ureg.hour).to('MJ'),
                 type= link.technosphereTypes.input)
     return technosphere
