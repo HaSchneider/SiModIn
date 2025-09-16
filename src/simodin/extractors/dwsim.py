@@ -1,13 +1,6 @@
 from .. import interface as link
-import pythoncom
-pythoncom.CoInitialize()
-
-import clr
-
-from System.IO import Directory
-from System import String
-
-import sys
+#import pythoncom
+#pythoncom.CoInitialize()
 
 
 def extract_dwsim_flows(SimModel: link.SimModel, model):
@@ -27,35 +20,35 @@ def extract_dwsim_flows(SimModel: link.SimModel, model):
     for obj in model.SimulationObjects.values():
         obj= obj.GetAsObject()
         # check for incoming and outgoing material streams:
-        if isinstance(obj, model.DWSIM.Thermodynamics.Streams.MaterialStream):
+        if isinstance(obj, SimModel.DWSIM.Thermodynamics.Streams.MaterialStream):
             if obj.GetConnectionPortsInfo()[1].IsConnected and not obj.GetConnectionPortsInfo()[0].IsConnected: # inlet stream
-                technosphere[obj.GetDisplayName()]=link.technosphere_edge(
-                    name = obj.GetDisplayName(),
+                technosphere[f'{obj.GetDisplayName()} - {obj.Name}']=link.technosphere_edge(
+                    name = f'{obj.GetDisplayName()} - {obj.Name}',
                     source=None,
                     target= SimModel,
                     amount = lambda:(SimModel.ureg.Quantity(obj.GetMassFlow() , obj.GetPropertyUnit('PROP_MS_2'))* SimModel.ureg.second),
                     type= link.technosphereTypes.output)
-        elif isinstance(obj, model.DWSIM.Thermodynamics.Streams.MaterialStream):
+        elif isinstance(obj, SimModel.DWSIM.Thermodynamics.Streams.MaterialStream):
             if obj.GetConnectionPortsInfo()[0].IsConnected and not obj.GetConnectionPortsInfo()[1].IsConnected: # outlet stream
-                technosphere[obj.GetDisplayName()]=link.technosphere_edge(
-                    name = obj.GetDisplayName(),
+                technosphere[f'{obj.GetDisplayName()} - {obj.Name}']=link.technosphere_edge(
+                    name = f'{obj.GetDisplayName()} - {obj.Name}',
                     source=SimModel,
                     target= None,
                     amount = lambda:(SimModel.ureg.Quantity(obj.GetMassFlow() , obj.GetPropertyUnit('PROP_MS_2'))* SimModel.ureg.second),
                     type= link.technosphereTypes.input)
         
-        elif isinstance(obj, model.DWSIM.UnitOperations.Streams.EnergyStream):
+        elif isinstance(obj, SimModel.DWSIM.UnitOperations.Streams.EnergyStream):
             if obj.GetConnectionPortsInfo()[1].IsConnected and not obj.GetConnectionPortsInfo()[0].IsConnected: # inlet stream
-                technosphere[obj.GetDisplayName()]=link.technosphere_edge(
-                    name = obj.GetDisplayName(),
+                technosphere[f'{obj.GetDisplayName()} - {obj.Name}']=link.technosphere_edge(
+                    name = f'{obj.GetDisplayName()} - {obj.Name}',
                     source=None,
                     target= SimModel,
                     amount = lambda:( SimModel.ureg.Quantity(obj.GetMassFlow() , obj.GetPropertyUnit('PROP_ES_0'))* SimModel.ureg.second),
                     type= link.technosphereTypes.output)
-        elif isinstance(obj, model.DWSIM.UnitOperations.Streams.EnergyStream):
+        elif isinstance(obj, SimModel.DWSIM.UnitOperations.Streams.EnergyStream):
             if obj.GetConnectionPortsInfo()[0].IsConnected and not obj.GetConnectionPortsInfo()[1].IsConnected: # outlet stream
-                technosphere[obj.GetDisplayName()]=link.technosphere_edge(
-                    name = obj.GetDisplayName(),
+                technosphere[f'{obj.GetDisplayName()} - {obj.Name}']=link.technosphere_edge(
+                    name = f'{obj.GetDisplayName()} - {obj.Name}',
                     source=SimModel,
                     target= None,
                     amount = lambda:(SimModel.ureg.Quantity(obj.GetMassFlow() , obj.GetPropertyUnit('PROP_ES_0'))* SimModel.ureg.second),
