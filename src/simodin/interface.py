@@ -70,6 +70,7 @@ class SimModel(ABC):
         Dict of the schema: 
             {'model_flow name': simodin.interface.technosphere_edge }
         '''
+
         return self._technosphere
     
     @technosphere.setter
@@ -129,6 +130,31 @@ class SimModel(ABC):
                 raise ValueError(f'Flow property {flow_property} not found in biosphere flow {flow_name}.')
         else:
             raise ValueError(f'Flow {flow_name} not found in technosphere or biosphere.')
+    
+    def add_flow(self, flow: Union['technosphere_edge', 'biosphere_edge']):
+        '''Add a flow to the flow dicts.
+
+        Args:
+            flow: Flow to be added.
+        
+        '''
+        if isinstance(flow, technosphere_edge):
+            if not hasattr(self, '_technosphere'):
+                self._technosphere= {}
+            self._technosphere[flow.name]= flow
+        elif isinstance(flow, biosphere_edge):
+            if not hasattr(self, '_biosphere'):
+                self._biosphere= {}
+            self._biosphere[flow.name]= flow
+        else:
+            raise ValueError(f'Flow {flow} is not a valid technosphere or biosphere flow.')
+        
+    @property
+    def citation(self):
+        '''Citation of the model:
+        
+        '''
+        
 
 # pydantic schema adapted from bw_interface_schemas: 
 # https://github.com/brightway-lca/bw_interface_schemas
@@ -354,6 +380,7 @@ class modelInterface(BaseModel):
         '''
         if callable(ex.amount):
             amount=ex.amount()
+            
         else:
             amount= ex.amount
             warnings.warn(f"No unit check possible for functional flow {ex.name}. Provide the desired output unit in 'technosphere_edge.model_unit' property.",UserWarning)
@@ -378,16 +405,19 @@ class modelInterface(BaseModel):
                 if hasattr(ex, 'model_unit') and ex.model_unit!=None:
                     dataset_unit= ex.model_unit
                 else:
+                    dataset_unit='NaU'
                     warnings.warn(f"No unit check possible for functional flow {ex.name}. Provide the desired output unit in 'technosphere_edge.model_unit' property.",UserWarning)
             
         # get model flow unit:
         # if pint quantity:
-        if isinstance(amount, pint.Quantity) and dataset_unit in self.model.ureg:
-            return amount.m_as(dataset_unit)
-        elif isinstance(amount, pint.Quantity) and dataset_unit not in self.model.ureg:
-            if dataset_unit != ' ':
-                warnings.warn(f"The dataset of {ex.name} got no valid Pint Unit. Ignore unit transformation.", UserWarning)
-            return amount.m
+        if isinstance(amount, pint.Quantity): 
+            if dataset_unit in self.model.ureg:
+                return amount.m_as(dataset_unit)
+            elif dataset_unit not in self.model.ureg:
+                #if dataset_unit != ' ':
+                #warnings.warn(f"The dataset of {ex.name} got no valid Pint Unit. Ignore unit transformation.", UserWarning)
+                ex.model_unit = amount.u
+                return amount.m
         # if no pint quantity                
         elif ex.model_unit!=None and ex.model_unit in self.model.ureg:
             if  ex.target!= None:
@@ -502,3 +532,4 @@ def call_after(method_name):
         wrapper.__isabstractmethod__ = getattr(func, "__isabstractmethod__", False)
         return wrapper
     return decorator
+
