@@ -13,21 +13,24 @@ class SimModel(ABC):
     """Class containing a simulation model.
 
     Args:
+        name: model name.
+        init_arg: Arguments needed for initialising the model. 
         **model_params: Parameters for the simulation Model.
     
     """
-    def __init__(self, name, **model_params):
+    def __init__(self, name, init_arg=None, **model_params):
         super().__init__()
         self.name = name
         self.ureg=pint.UnitRegistry()
         self.params= model_params
         self.location = 'GLO'
-        self.init_model(**model_params)
+        self.init_model(init_arg, **model_params)
         self.define_flows()
         self.converges= False
 
+
     @abstractmethod
-    def init_model(self, **model_params):
+    def init_model(self, init_arg=None, **model_params):
         '''Abstract method to initiate the model.
 
         Args:
@@ -201,6 +204,7 @@ class QuantitativeEdge(Edge):
 class technosphere_edge(QuantitativeEdge):
     """A technosphere flow."""
     functional: bool = False
+    reference: bool = False
     edge_type: Literal[QuantitativeEdgeTypes.technosphere] = (
         QuantitativeEdgeTypes.technosphere
     )
@@ -233,8 +237,6 @@ class modelInterface(BaseModel):
     model: SimModel
     name: str
 
-    #technosphere: Dict[str, technosphere_edge]={}
-    #biosphere: Dict[str, biosphere_edge]={}
     params: Optional[Dict[str, Union[float, int, bool, str]]]=None
     methods: list=[]
     converged: bool= False
@@ -244,18 +246,13 @@ class modelInterface(BaseModel):
     impact_dissag: Dict={}
     impact: dict={}
     lca: Optional[bc.MultiLCA]=None
+    _reference_flow: str=''
 
     def __init__(self, name, model):
         super().__init__(name=name, model=model)
-        #self.name = name
-        #self.technosphere= self.model._technosphere
-        #self.biosphere= self.model._biosphere
         self.params = self.model.params
         self.ureg = self.model.ureg
 
-    #def setup_link(self):
-    #    self.technosphere= self.model._technosphere
-    #    self.biosphere= self.model._biosphere
 
     def add_dataset(self, flow_name, dataset):
         '''Link a brightway25 dataset to a model flow.
@@ -322,6 +319,7 @@ class modelInterface(BaseModel):
         
         if not hasattr(self, 'lca'):
             self.calculate_background_impact()
+        self._get_reference()
         self.impact_allocated = {}
         self.impact = {}
         self.impact_dissag =  {}
@@ -364,10 +362,23 @@ class modelInterface(BaseModel):
                 else:
                     self.impact_allocated[cat][name] =(
                         self.impact[cat] * 
-                        ex.allocationfactor/self._get_flow_value(ex)
+                        ex.allocationfactor/self._get_flow_value(self.model._technosphere[self._reference_flow])
                         )
         return self.impact_allocated
-    
+    def _get_reference(self):
+        '''Sets the reference flow according to technosphere definition. 
+        Iterates through the technosphere flows and check for reference flows.
+        Raises error if more than one reference flows are defined.
+        '''
+        ref_list=[name for name, ex  in self.model._technosphere.items()
+                  if ex.reference]
+        if len(ref_list)>1:
+            raise ValueError(f'More than one reference flows. You have to define only one reference flow with `model.set_flow_attr()`. The lis of flows with reference flows is: {ref_list}.')
+        elif len(ref_list)==0:
+            raise ValueError(f'No reference flow defined. Use `model.set_flow_attr()` to define exactly one reference flow.')
+        else:
+            self._reference_flow= ref_list[0]
+        
     def _get_flow_value(self, ex):
         '''Get the correct amount value and transform to the correct unit if possible.
 
