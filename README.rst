@@ -51,7 +51,7 @@ To use the existing SiModIn model, import and instantiate the SimModel class:
 
 .. code-block:: python
 
-   from simodin.Examples.tespy.power_plant.SimModel_powerplant import tespy_model
+   from SimModel_powerplant import tespy_model
    from simodin import interface as link
 
    my_model= tespy_model('powerplant')
@@ -68,7 +68,7 @@ Create the technosphere dictionary and pass the model to an modelInterface insta
 
 .. code-block:: python
 
-   my_model.technosphere
+   my_model.define_flows()
 
    my_interface= link.modelInterface('tespy powerplant',my_model)
 
@@ -84,13 +84,13 @@ For LCA calculation, the needed brightway25 dataset needs to be assigned to the 
 
    ei_heat=[act for act in ei if 'heat production, at hard coal industrial furnace 1-10MW' in act['name']
     and 'Europe without Switzerland' in act['location'] ][0]
-   my_interface.technosphere['heat source'].source=ei_heat
 
    ei_water=[act for act in ei if 'market for tap water' in act['name']
     and 'Europe without Switzerland' in act['location'] ][0]
 
-   my_interface.technosphere['cooling water source'].source=ei_water
-   my_interface.technosphere['cooling water source'].dataset_correction = 0.1 #blowdown rate
+   my_interface.add_dataset('heat source', ei_steam)
+   my_interface.add_dataset('cooling water source', ei_water)
+   my_model.set_flow_attr('cooling water source', 'dataset_correction', 0.1)
 
 After that, the LCA calculation can be executed or the data exported to a brightway25 database:
 
@@ -100,4 +100,4 @@ After that, the LCA calculation can be executed or the data exported to a bright
    my_interface.calculate_impact()
    code= my_interface.export_to_bw()
 
-This and further examples how to use SiModIn can be found `here <https://github.com/HaSchneider/SiModIn/tree/main/src/simodin/Examples>`_.
+This and further examples how to use SiModIn can be found `here <https://github.com/HaSchneider/awesome-simodin-models/tree/main/Examples>`_.
