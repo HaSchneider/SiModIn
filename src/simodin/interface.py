@@ -30,6 +30,14 @@ class SimModel(ABC):
         **model_params: Parameters for the simulation Model.
     
     """
+    reference={ 
+        'type': 'misc',
+        'key': '',
+        'author' :'',
+        'title'  : '',
+        'license': '',
+        'url': ''
+        }
     def __init__(self, name, init_arg=None, **model_params):
         super().__init__()
         self.name = name
