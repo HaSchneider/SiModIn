@@ -8,6 +8,18 @@ import pint
 import warnings
 from enum import StrEnum
 from functools import wraps
+import functools
+
+
+def update_params(func):
+    """Decorator for overwrite params before call of concrete methods. 
+    """
+    @functools.wraps(func)
+    def wrapper(self, **model_params):
+        self.params =self.params | model_params 
+        return func(self, **model_params)
+    return wrapper
+
 
 class SimModel(ABC):
     """Class containing a simulation model.
@@ -24,13 +36,23 @@ class SimModel(ABC):
         self.ureg=pint.UnitRegistry()
         self.params= model_params
         self.location = 'GLO'
-        self.init_model(init_arg, **model_params)
-        self.define_flows()
+        #self.init_model(init_arg, **model_params)
+        #self.define_flows()
         self.converges= False
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # wenn Subklasse foo neu definiert hat, dekorieren:
+        if 'init_model' in cls.__dict__:
+            cls.init_model = update_params(cls.init_model)
+        if 'calculate_model' in cls.__dict__:
+            cls.calculate_model = update_params(cls.calculate_model)
+        if 'recalculate_model' in cls.__dict__:
+            cls.recalculate_model = update_params(cls.recalculate_model)
 
 
     @abstractmethod
-    def init_model(self, init_arg=None, **model_params):
+    def init_model(self, **model_params):
         '''Abstract method to initiate the model.
 
         Args:
@@ -40,17 +62,6 @@ class SimModel(ABC):
         self.params= self.params|model_params
 
     
-    '''
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        # Wenn Subklassen foo() wirklich selbst implementieren,
-        # dann umwickeln wir sie hier:
-        if "recalculate_model" in cls.__dict__:
-            cls.recalculate_model = call_after("define_flows")(cls.recalculate_model)
-        if "calculate_model" in cls.__dict__:
-            cls.calculate_model = call_after("define_flows")(cls.calculate_model)
-    '''
-
     @abstractmethod
     def calculate_model(self, **model_params):
         '''Abstract method to calculate the model based on the parameters provided.
@@ -373,7 +384,8 @@ class modelInterface(BaseModel):
         ref_list=[name for name, ex  in self.model._technosphere.items()
                   if ex.reference]
         if len(ref_list)>1:
-            raise ValueError(f'More than one reference flows. You have to define only one reference flow with `model.set_flow_attr()`. The lis of flows with reference flows is: {ref_list}.')
+            raise ValueError(f'More than one reference flows. You have to define only one reference flow with `model.set_flow_attr()`. '
+                             'The list of flows with reference flows is: {ref_list}.')
         elif len(ref_list)==0:
             raise ValueError(f'No reference flow defined. Use `model.set_flow_attr()` to define exactly one reference flow.')
         else:
@@ -413,7 +425,9 @@ class modelInterface(BaseModel):
                 dataset_unit= 'NaU'
                 raise ValueError(f'No dataset available for {ex.name}.')
             else: 
-                if hasattr(ex, 'model_unit') and ex.model_unit!=None:
+                if hasattr(ex, 'model_unit') and ex.model_unit!=None and isinstance(ex.model_unit, pint.Unit):
+                    dataset_unit= ex.model_unit
+                elif hasattr(ex, 'model_unit') and ex.model_unit!=None:
                     dataset_unit= ex.model_unit
                 else:
                     dataset_unit='NaU'
@@ -422,7 +436,7 @@ class modelInterface(BaseModel):
         # get model flow unit:
         # if pint quantity:
         if isinstance(amount, pint.Quantity): 
-            if dataset_unit in self.model.ureg:
+            if  isinstance(dataset_unit, pint.Unit) or dataset_unit in self.model.ureg :
                 return amount.m_as(dataset_unit)
             elif dataset_unit not in self.model.ureg:
                 #if dataset_unit != ' ':
@@ -449,22 +463,26 @@ class modelInterface(BaseModel):
 
     def export_to_bw(self, database=None, identifier=None):
         '''Export the model to a brightway dataset.
-        Creates the database simulation_model_db if no database is passed. Creates a identifier by the model name, functional unit flow name, and a time stamp if none is passed.
+        Creates the database simulation_model_db if no database is passed. Creates a identifier by the model name, 
+        functional unit flow name, and a time stamp if none is passed.
 
         Args:
-            database: Database in which the model activity should be exported.
-            identifier: code for the brightway activity
-        
+            database: Database in which the model activity should be exported. Default is "simodin_db"
+            identifier: code for the brightway activity. If empty, the activity code will be created 
+                by the name of the mode, the name of the functional flow, and a timestamp.
+                If provided but multifunctional, it will create a dataset for each with a code consisting 
+                of the name of the functional flow and the provided identifier. 
         '''
         if not hasattr(self, 'impact_allocated'):
             self.calculate_impact()
-        self.update_flows()
+        
         if database== None:
-            database = f"simulation_model_db" 
+            database = f"simodin_db" 
 
         if database not in bd.databases:
             bd.Database(database).register() 
-        
+        # iterate over functional flows and create a dataset for each:
+        code_list=[]
         for fun_name, fun_ex in self.model._technosphere.items():
             if not fun_ex.functional:
                 continue
@@ -474,6 +492,8 @@ class modelInterface(BaseModel):
 
             else:
                 code= f'{fun_name}_{identifier}'
+            code_list.append(code)
+            #create a new node in brightway:
             node = bd.Database(database).new_node(
                 name= fun_name,
                 unit= fun_ex.model_unit,
@@ -482,8 +502,9 @@ class modelInterface(BaseModel):
             )
             node.save()
 
+            #iterate over the technosphere flows and create exchanges to the brightway node for each flow:
             for name, ex in self.model._technosphere.items():
-                if ex.functional:
+                if ex.functional: # only handle not functional flows
                     continue
                 #check if technosphere is linked to a bw activity
                 if not isinstance(ex.target, bd.backends.proxies.Activity) and ex.source == self.model:
@@ -531,16 +552,4 @@ class modelInterface(BaseModel):
                 type = 'production',
             ).save()
         
-        return code
-    
-def call_after(method_name):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            func(self, *args, **kwargs)
-            getattr(self, method_name)()
-            
-        wrapper.__isabstractmethod__ = getattr(func, "__isabstractmethod__", False)
-        return wrapper
-    return decorator
-
+        return code_list
