@@ -9,6 +9,7 @@ import warnings
 from enum import StrEnum
 from functools import wraps
 import functools
+import pandas as pd
 
 
 def update_params(func):
@@ -38,6 +39,9 @@ class SimModel(ABC):
         'license': '',
         'url': ''
         }
+    # Description of the model:
+    description=''
+
     def __init__(self, name, init_arg=None, **model_params):
         super().__init__()
         self.name = name
@@ -50,7 +54,6 @@ class SimModel(ABC):
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        # wenn Subklasse foo neu definiert hat, dekorieren:
         if 'init_model' in cls.__dict__:
             cls.init_model = update_params(cls.init_model)
         if 'calculate_model' in cls.__dict__:
@@ -102,6 +105,27 @@ class SimModel(ABC):
         '''
         self._technosphere= technosphere_dict
     
+    @technosphere.getter
+    def technosphere(self):
+        data={
+            "description":[],
+            "amount":[],
+            "source":[],
+            "target":[],
+            "functional":[],
+            "dataset_correction":[],
+            "reference":[],
+            "allocationfactor":[],
+            "model_unit":[],
+            }
+        for k, v in self._technosphere.items():
+            for key, val in data.items():
+                if key =='amount':
+                    val.append(getattr(v, key)())   
+                else:
+                    val.append(getattr(v, key))
+        df = pd.DataFrame(data, index = self._technosphere.keys())
+        return(df)
 
     @property
     def biosphere(self) -> dict:
@@ -123,6 +147,23 @@ class SimModel(ABC):
         '''
         self._biosphere= biosphere_dict
     
+    @biosphere.getter
+    def biosphere(self):
+        data={
+            "description":[],
+            "amount":[],
+            "source":[],
+            "target":[],
+            "dataset_correction":[],
+            }
+        for k, v in self._biosphere.items():
+            for key, val in data.items():
+                if key =='amount':
+                    val.append(getattr(v, key)())   
+                else:
+                    val.append(getattr(v, key))
+        df = pd.DataFrame(data, index = self._biosphere.keys())
+        return(df)
     
     @abstractmethod
     def define_flows(self):
@@ -231,6 +272,8 @@ class technosphere_edge(QuantitativeEdge):
     dataset_unit: Union[pint.Unit, str, None] =None
     allocationfactor: float= 1.0
     type: technosphereTypes
+    database: Union[str, None]=None
+    dataset: Union[str, None]=None
 
 class biosphere_edge(QuantitativeEdge):
     """A biosphere flow."""
@@ -299,7 +342,22 @@ class modelInterface(BaseModel):
             
         else:
             raise ValueError(f'Flow {flow_name} not found in technosphere or biosphere.')
-
+        
+    def remove_dataset(self, flow_name):
+        if flow_name in self.model._technosphere:
+            if self.model._technosphere[flow_name].target == self.model:
+                self.model._technosphere[flow_name].source= None
+            elif self.model._technosphere[flow_name].source == self.model:
+                self.model._technosphere[flow_name].target= None
+            
+        elif flow_name in self.model._biosphere:
+            if self.model._biosphere[flow_name].target == self.model:
+                self.model._biosphere[flow_name].source= None
+            elif self.model._biosphere[flow_name].source == self.model:
+                self.model._biosphere[flow_name].target= None
+        else:
+            raise ValueError(f'Flow {flow_name} not found in technosphere or biosphere.')
+    
     def calculate_background_impact(self):
         '''
         Calculate the background impact based on the parameters provided.
@@ -509,7 +567,7 @@ class modelInterface(BaseModel):
                 **self.model.params
             )
             node.save()
-
+            
             #iterate over the technosphere flows and create exchanges to the brightway node for each flow:
             for name, ex in self.model._technosphere.items():
                 if ex.functional: # only handle not functional flows
