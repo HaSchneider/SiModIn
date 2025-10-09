@@ -13,7 +13,8 @@
     :alt: PyPI-Server
     :target: https://pypi.org/project/simodin/
 
-
+..  figure:: /images/simodin.svg
+    :alt: simodin logo
 
 
 =======
@@ -22,6 +23,8 @@ SiModIn
 
    **Si**\ mulation **Mod**\ el **In**\ terface 
     Interface between simulation models and `brightway25 <https://docs.brightway.dev/en/latest/>`_.
+
+
 
 
 **SiModIn** can be used to:
