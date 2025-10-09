@@ -110,18 +110,30 @@ class SimModel(ABC):
         data={
             "description":[],
             "amount":[],
-            "source":[],
-            "target":[],
             "functional":[],
             "dataset_correction":[],
             "reference":[],
             "allocationfactor":[],
             "model_unit":[],
+            "impact":[],
+            "source":[],
+            "target":[],
             }
         for k, v in self._technosphere.items():
             for key, val in data.items():
                 if key =='amount':
                     val.append(getattr(v, key)())   
+                else:
+                    val.append(getattr(v, key))
+        df = pd.DataFrame(data, index = self._technosphere.keys())
+        return(df)
+    
+    def print_technosphere(self, prop_list):
+        data= {arg:[] for arg in prop_list }
+        for k, v in self._technosphere.items():
+            for key, val in data.items():
+                if key =='amount':
+                    val.append(getattr(v, key)())
                 else:
                     val.append(getattr(v, key))
         df = pd.DataFrame(data, index = self._technosphere.keys())
@@ -258,8 +270,9 @@ class QuantitativeEdge(Edge):
     maximum: float | None = None
     negative: bool | None = None
     description: Union[str, dict[str, str], None] = None
+    default_name: str = ''
+    default_code: str = ''
     dataset_correction: float | None = None
-
 
 class technosphere_edge(QuantitativeEdge):
     """A technosphere flow."""
@@ -274,6 +287,7 @@ class technosphere_edge(QuantitativeEdge):
     type: technosphereTypes
     database: Union[str, None]=None
     dataset: Union[str, None]=None
+    impact: Union[dict[str,Union[pint.Quantity, float]], None]=None 
 
 class biosphere_edge(QuantitativeEdge):
     """A biosphere flow."""
@@ -391,7 +405,6 @@ class modelInterface(BaseModel):
     
     def calculate_impact(self):
         '''Calculate the impact and returns the allocated impact.
-
         '''
         
         if not hasattr(self, 'lca'):
@@ -441,6 +454,10 @@ class modelInterface(BaseModel):
                         self.impact[cat] * 
                         ex.allocationfactor/self._get_flow_value(self.model._technosphere[self._reference_flow])
                         )
+                    if ex.impact is None:
+                        ex.impact={}
+                    ex.impact[cat]=self.impact_allocated[cat][name]
+
         return self.impact_allocated
     def _get_reference(self):
         '''Sets the reference flow according to technosphere definition. 
@@ -506,7 +523,7 @@ class modelInterface(BaseModel):
                 return amount.m_as(dataset_unit)
             elif dataset_unit not in self.model.ureg:
                 #if dataset_unit != ' ':
-                #warnings.warn(f"The dataset of {ex.name} got no valid Pint Unit. Ignore unit transformation.", UserWarning)
+                warnings.warn(f"The model_unit of {ex.name} got no valid Pint Unit. Ignore unit transformation and internal model unit is choosen.", UserWarning)
                 ex.model_unit = amount.u
                 return amount.m
         # if no pint quantity                
