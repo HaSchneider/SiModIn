@@ -13,6 +13,12 @@
     :alt: PyPI-Server
     :target: https://pypi.org/project/simodin/
 
+
+.. image:: https://img.shields.io/badge/License-MIT-yellow.svg
+    :alt: License: MIT
+    :target: https://opensource.org/licenses/MIT
+ 
+
 ..  figure:: /images/simodin.svg
     :alt: simodin logo
 
