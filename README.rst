@@ -13,6 +13,11 @@
     :alt: PyPI-Server
     :target: https://pypi.org/project/simodin/
 
+.. image:: https://img.shields.io/badge/brightway-25-83d299
+    :alt: brightway: 25
+    :target: https://github.com/brightway-lca/brightway25
+
+
 ..  figure:: /images/simodin.svg
     :alt: simodin logo
 
