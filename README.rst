@@ -18,6 +18,11 @@
     :target: https://github.com/brightway-lca/brightway25
 
 
+.. image:: https://img.shields.io/badge/License-MIT-yellow.svg
+    :alt: License: MIT
+    :target: https://opensource.org/licenses/MIT
+ 
+
 ..  figure:: /images/simodin.svg
     :alt: simodin logo
 
