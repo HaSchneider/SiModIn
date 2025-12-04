@@ -283,7 +283,7 @@ class technosphere_edge(QuantitativeEdge):
     )
     model_unit: Union[pint.Unit, str, None] =None
     dataset_unit: Union[pint.Unit, str, None] =None
-    allocationfactor: float= 1.0
+    allocationfactor: Union[float, Callable] =1.0
     type: technosphereTypes
     database: Union[str, None]=None
     dataset: Union[str, None]=None
@@ -416,6 +416,7 @@ class modelInterface(BaseModel):
         for cat in self.method_config['impact_categories']:
             self.impact[cat] = 0
             self.impact_dissag[cat]={}
+            #iterate over technosphere flows:
             for name, ex  in self.model._technosphere.items():
                 
                 if ex.functional:
@@ -432,6 +433,7 @@ class modelInterface(BaseModel):
                 self.impact[cat] += score
 
                 self.impact_dissag[cat][ex.name]=score
+            # iterate over biosphere flows:
             for name, ex in self.model._biosphere.items():
                 cf_list=bd.Method(cat).load()
                 if ex.source == self.model:
@@ -444,15 +446,19 @@ class modelInterface(BaseModel):
                     self.impact[cat] += self._get_flow_value(ex)*factor[0][1]
 
             self.impact_allocated[cat]={}
-            # for functional unit:
+            # iterate over functional units:
             #if isinstance(self.functional_unit, dict):
             for name, ex in self.model._technosphere.items():
                 if not ex.functional:
                     continue
                 else:
+                    if callable(ex.allocationfactor):
+                        allocationfactor= ex.allocationfactor()
+                    else:
+                        allocationfactor= ex.allocationfactor
                     self.impact_allocated[cat][name] =(
                         self.impact[cat] * 
-                        ex.allocationfactor/self._get_flow_value(self.model._technosphere[self._reference_flow])
+                        allocationfactor/self._get_flow_value(self.model._technosphere[self._reference_flow])
                         )
                     if ex.impact is None:
                         ex.impact={}
@@ -584,7 +590,10 @@ class modelInterface(BaseModel):
                 **self.model.params
             )
             node.save()
-            
+            if callable(fun_ex.allocationfactor):
+                allocationfactor= fun_ex.allocationfactor()
+            else:
+                allocationfactor= fun_ex.allocationfactor
             #iterate over the technosphere flows and create exchanges to the brightway node for each flow:
             for name, ex in self.model._technosphere.items():
                 if ex.functional: # only handle not functional flows
@@ -595,7 +604,7 @@ class modelInterface(BaseModel):
                 if not isinstance(ex.source, bd.backends.proxies.Activity) and ex.target == self.model:
                     continue
                 
-                allocated_amount= (self._get_flow_value(ex)*fun_ex.allocationfactor / 
+                allocated_amount= (self._get_flow_value(ex)*allocationfactor / 
                                     self._get_flow_value(fun_ex))
                 #dataset correction for original linked dataset.
                 if ex.dataset_correction != None:
@@ -615,7 +624,7 @@ class modelInterface(BaseModel):
 
             for name, ex in self.model._biosphere.items():
                 
-                allocated_amount= (self._get_flow_value(ex)*fun_ex.allocationfactor / 
+                allocated_amount= (self._get_flow_value(ex)*allocationfactor / 
                                     self._get_flow_value(fun_ex))
                 if ex.target == self.model:
                     node.new_exchange(
