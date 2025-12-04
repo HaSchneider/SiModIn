@@ -1,0 +1,26 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: SiModIn
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Hannes
+    family-names: Schneider
+    email: simodin@posteo.de
+    affiliation: TU Braunschweig ICTV
+repository-code: 'https://github.com/HaSchneider/SiModIn'
+abstract: >
+  Interface between simulation models and brightway25.
+  Create simulation based brightway25 datasets. Calculate
+  the impact of your models. Provide your simulation models
+  for LCA studies.
+keywords:
+  - lca
+  - process simulation
+  - interface
+  - brightway
+license: MIT
