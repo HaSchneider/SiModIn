@@ -137,7 +137,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv"]
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"
+#pygments_style = "sphinx"
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -153,14 +153,16 @@ todo_emit_warnings = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "furo"#"furo"alabaster
+html_theme = "furo"#alabaster
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
+    "light_logo": "./images/simodin.svg",
+    "dark_logo": "./images/simodin_3_dark.svg",
     #"sidebar_width": "300px",
-    #"page_width": "1200px"
+    #"page_width": "1500px"
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -175,12 +177,12 @@ html_theme_options = {
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-# html_logo = ""
+#html_logo = "images/simodin.svg"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-# html_favicon = None
+html_favicon = "./_static/images/simodin_logo_v3.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

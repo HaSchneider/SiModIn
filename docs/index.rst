@@ -12,11 +12,17 @@ Contents
    :maxdepth: 2
 
    Overview <readme>  
+   Tutorials <tutorial>
+   
+
+.. toctree::
+   :maxdepth: 2
+   :caption: About SiModIn
+
    License <license>
    Authors <authors>
    Changelog <changelog>
    Module Reference <api/modules>
-
 
 Indices and tables
 ==================

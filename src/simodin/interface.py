@@ -302,7 +302,7 @@ class modelInterface(BaseModel):
     '''Class for interface external simulation models with brightway25.
     
     Attributes:
-    ----------
+    -----------
         name: Name of the model.
         model: The Simulation model as SimModel class.
     
