@@ -17,10 +17,21 @@ def update_params(func):
     """
     @functools.wraps(func)
     def wrapper(self, **model_params):
-        self.params =self.params | model_params 
+        self.params =self.params | model_params
         return func(self, **model_params)
     return wrapper
 
+def check_params(func):
+    """Decorater for check if all parameter are defined."""
+    @functools.wraps(func)
+    def wrapper(self, **model_params):
+        #TODO add check if parameter is in defined range. 
+        for p in self.parameter.keys():
+            if p not in self.params:
+                raise Exception(f'The parameter {p} is not defined. It mus be passed as parameter in the init_model, calculate_model methods or be defined somewhere else.')
+
+        return func(self, **model_params)
+    return wrapper
 
 class SimModel(ABC):
     """Class containing a simulation model.
@@ -42,6 +53,10 @@ class SimModel(ABC):
     # Description of the model:
     description=''
 
+    # needed parameters for the model:
+    #TODO add parameter datacontainer class with min max value
+    parameter={}
+
     def __init__(self, name, init_arg=None, **model_params):
         super().__init__()
         self.name = name
@@ -57,9 +72,9 @@ class SimModel(ABC):
         if 'init_model' in cls.__dict__:
             cls.init_model = update_params(cls.init_model)
         if 'calculate_model' in cls.__dict__:
-            cls.calculate_model = update_params(cls.calculate_model)
+            cls.calculate_model = update_params(check_params(cls.calculate_model))
         if 'recalculate_model' in cls.__dict__:
-            cls.recalculate_model = update_params(cls.recalculate_model)
+            cls.recalculate_model = update_params(check_params(cls.recalculate_model))
 
 
     @abstractmethod
