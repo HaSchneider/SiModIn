@@ -26,12 +26,25 @@ def check_params(func):
     @functools.wraps(func)
     def wrapper(self, **model_params):
         #TODO add check if parameter is in defined range. 
-        for p in self.parameter.keys():
-            if p not in self.params:
-                raise Exception(f'The parameter {p} is not defined. It mus be passed as parameter in the init_model, calculate_model methods or be defined somewhere else.')
-
+        for p in self.parameter:
+            if p.name not in self.params:
+                raise Exception(f'The parameter {p.name} is not defined. It mus be passed as parameter in the init_model, calculate_model methods or be defined somewhere else.')
+            elif p.min:
+                if p.min > self.params[p.name]:
+                    raise Exception(f'The parameter {p.name} is smaler than the defined minimum value of {p.min}.  Choose a larger value.')
+            elif p.max:
+                if p.max < self.params[p.name]:
+                    raise Exception(f'The parameter {p.name} is larger than the defined maximum value of {p.max}.  Choose a smaler value.')
         return func(self, **model_params)
     return wrapper
+
+class parameter(BaseModel):
+    name: str
+    default: Union[float, int, str, pint.Quantity, None]
+    min: Union[float, int, str, pint.Quantity, None]
+    max: Union[float, int, str, pint.Quantity, None]
+    comment: Union[str, dict[str, str], None] = None
+    
 
 class SimModel(ABC):
     """Class containing a simulation model.
@@ -55,7 +68,7 @@ class SimModel(ABC):
 
     # needed parameters for the model:
     #TODO add parameter datacontainer class with min max value
-    parameter={}
+    parameters=[]
 
     def __init__(self, name, init_arg=None, **model_params):
         super().__init__()
