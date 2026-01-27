@@ -4,6 +4,11 @@
 Use SiModIn models  
 ##################
 
+
+
+Initialization
+"""""""""""""""
+
 To use an existing SiModIn model, import and initialize the :code:`SimModel` class:
 
 .. code-block:: python
@@ -26,6 +31,10 @@ Then initialize and calculate the model by calling the respective methods:
    my_model.init_model()
    my_model.calculate_model()
 
+
+LCA setup
+""""""""""
+
 With :code:`define_flows`, the flows of the model can be set up for LCA calculations:
 
 .. code-block:: python
@@ -47,7 +56,6 @@ The LCA datasets can then be added to the model interface using the :code:`add_d
     my_interface.add_dataset('technosphere_flow_B', bw25_activity_B)
 
 For the LCIA, the impact categorization method needs to be set by set the :code:`methods` property.
-The impact can be calculated by calling :code:`calculate_background_impact` method, followed by the :code:`calculate_impact` method:
 
 .. code-block:: python
 
@@ -57,12 +65,45 @@ The impact can be calculated by calling :code:`calculate_background_impact` meth
             'climate change',  
             'global warming potential (GWP100)')]
 
-    my_interface.calculate_background_impact()
-    total_impact = my_interface.calculate_impact()
-    print("Total Impact:", total_impact)
 
+LCA calculation
+""""""""""""""""
 
-Then, the model result can be exported to a brightway25 activity using the :code:`export_to_bw` method. The name of the activity can be passed as an argument, or it will use the model name with a time stamp by default. The brightway25 database can also be specified, otherwise the default database :code:`simodin_db` will be used.
+The impact can be calculated by calling :code:`calculate_background_impact` method, followed by the :code:`calculate_impact` method:
+
+.. code-block:: python
+
+   my_interface.calculate_background_impact()
+   total_impact = my_interface.calculate_impact()
+   print("Total Impact:", total_impact)
+
+.. admonition:: Unit transformation
+   :class: tip
+
+   An unit transformation logic based on `Pint <https://pint.readthedocs.io/en/stable/>`_ is implemented in the :code:`modelInterface` classs. 
+   This works only when all of the following requirements are met:
+   
+   - brightway dataset:
+     
+     1. the flow got a :code:`unit` property which is compatible with the `default Pint units <https://github.com/hgrecco/pint/blob/master/pint/default_en.txt>`_
+     2. or the linked brightway activity got a :code:`unit` property which is compatible with the `default Pint units <https://github.com/hgrecco/pint/blob/master/pint/default_en.txt>`_
+   
+   - model flow:
+
+     1. the value returned by the model flow property :code:`amount` is a Pint quantity
+     2. or the model flow property :code:`model_unit` is defined and is compatible with the `default Pint units <https://github.com/hgrecco/pint/blob/master/pint/default_en.txt>`_
+
+   The units must be compatible, otherwise an error is raised. 
+
+   If the requirements are not met, a warning is raised and no transformation is done. 
+
+Export to a brightway25 dataset
+""""""""""""""""""""""""""""""""
+
+Then, the model result can be exported to a brightway25 activity using the :code:`export_to_bw` method. 
+The name of the activity can be passed as an argument, or it will use a string created by the model name, 
+the name of the functional unit and a time stamp. 
+The brightway25 database can also be specified, otherwise the default database :code:`simodin_db` will be used.
 
 .. code-block:: python
 

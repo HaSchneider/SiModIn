@@ -47,12 +47,14 @@ Import dependencies:
     )
     from tespy.connections import Connection, Ref, PowerConnection
 
-Provide model reference as class attribute.
+Define class attributes:
 """""""""""""""""""""""""""""""""""""""""""
 
 Reference can be passed to the model by using the class attribute :code:`reference`. 
 A bibtex like dictionary with reference informations can be passed here.
-Aditionally, needed parameter can be defined here with defaul values in the :code:`parameter` dictionary attribute. 
+
+Aditionally, needed parameter can be defined here with default values in the :code:`parameter` list.
+An allowed parameter range can be defined by the :code:`min` and :code:`max` attributes.
 
 .. code-block:: python
 
@@ -65,10 +67,16 @@ Aditionally, needed parameter can be defined here with defaul values in the :cod
             'url': 'https://tespy.readthedocs.io/en/main/basic_tutorials/gas_turbine.html'
             }
 
-        parameter={
-            'heat_output':100*self.model.units.ureg.MJ,
-            'lifetime_turbine':80000*self.model.units.ureg.hour, #lifetime in hours
-            }
+        parameter=[
+            link.parameter(name='heat_output', 
+                            default= 100*self.model.units.ureg.MJ,
+            ),
+            link.parameter(name='lifetime_turbine',
+                            default=80000*self.model.units.ureg.hour, #lifetime in hours
+                            min =40000*self.model.units.ureg.hour,
+                            max = 160000*self.model.units.ureg.hour
+            )
+        ]
 
 Implementation of the concrete methods:
 """"""""""""""""""""""""""""""""""""""""
@@ -205,9 +213,14 @@ exact one reference flow by the set_flow_attr method:
                 'production of a turbine with a suitable power as functional unit')
         ))
 
+.. note:: 
+    Currently, the :code:`amount` property of technosphere flows must be callable.
+    Lambda functions can be used for that.
 
-Load the model
-""""""""""""""
+
+
+Apply the model
+""""""""""""""""
 
 After defining your model class, you can instantiate and use it in your 
 application as shown in the :doc:`"Use SiModIn models" <load_model>` 
