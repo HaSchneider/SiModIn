@@ -39,6 +39,8 @@ def check_params(func):
     return wrapper
 
 class parameter(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     name: str
     default: Union[float, int, str, pint.Quantity, None]
     min: Union[float, int, str, pint.Quantity, None]
