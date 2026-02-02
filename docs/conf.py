@@ -171,7 +171,7 @@ html_theme_options = {
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-version = simodin.__version__.split(' - ')[0]
+version = simodin.__version__.split('+')[0]
 html_title = f"{project} v{version}"
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
