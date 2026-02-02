@@ -10,6 +10,7 @@
 import os
 import sys
 import shutil
+import simodin
 
 # -- Path setup --------------------------------------------------------------
 
@@ -170,7 +171,8 @@ html_theme_options = {
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-# html_title = None
+version = simodin.__version__.split(' - ')[0]
+html_title = f"{project} v{version}"
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None

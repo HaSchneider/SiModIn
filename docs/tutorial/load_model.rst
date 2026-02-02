@@ -4,7 +4,8 @@
 Use SiModIn models  
 ##################
 
-
+In this tutorial the setup of SiModIn models is shown. Furthermore the calculation of the LCA scores of the models, 
+and the export to brightway25 datasets is described with an example.  
 
 Initialization
 """""""""""""""
