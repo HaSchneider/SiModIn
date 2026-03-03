@@ -26,7 +26,7 @@ def check_params(func):
     @functools.wraps(func)
     def wrapper(self, **model_params):
         #TODO add check if parameter is in defined range. 
-        for p in self.parameter:
+        for p in self.parameters:
             if p.name not in self.params:
                 raise Exception(f'The parameter {p.name} is not defined. It mus be passed as parameter in the init_model, calculate_model methods or be defined somewhere else.')
             elif p.min:
