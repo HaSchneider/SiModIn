@@ -1,3 +1,5 @@
+from unicodedata import name
+
 import bw2data as bd
 import bw2calc as bc
 from abc import ABC, abstractmethod
@@ -21,12 +23,45 @@ def update_params(func):
         return func(self, **model_params)
     return wrapper
 
+def wrap_init(func):
+    """Decorator executed before __init__ to load default parameters as instance attributes. 
+    """
+    @functools.wraps(func)
+    def wrapper(self, name, init_arg=None, **model_params):
+        self.name = name
+        self.ureg=pint.UnitRegistry()
+        # check and create parameter dict:
+        self.params =  model_params
+        for _, p in self.__class__.parameters.items():
+            if p.name not in model_params and p.default == None:
+                raise Exception(
+                    f'''The parameter {p.name} is not defined. 
+                    It mus be passed as parameter in the __init__ method or be defined as default parameter in the class definition.'''
+                    )
+            elif p.name not in model_params and p.default != None:
+                self.params[p.name]= p.default
+        undefined_params= [p for p in model_params if p not in self.__class__.parameters]
+        if len(undefined_params) >0:
+            raise Warning(
+                f'''The parameters {list(undefined_params)} are not defined for this model. No validy check possible for this parameter. 
+                Please check if the parameter name is correct and if it is defined in the model class definition.'''
+                )
+        if 'location' in self.__class__.__dict__:
+            self.location = self.__class__.location 
+        else:
+            self.location = 'GLO'
+        #self.init_model(init_arg, **model_params)
+        #self.define_flows()
+        self.converges= False
+        return func(self)
+    return wrapper
+
+
 def check_params(func):
     """Decorater for check if all parameter are defined."""
     @functools.wraps(func)
     def wrapper(self, **model_params):
-        #TODO add check if parameter is in defined range. 
-        for p in self.parameters:
+        for _, p in self.parameters.items():
             if p.name not in self.params:
                 raise Exception(f'The parameter {p.name} is not defined. It mus be passed as parameter in the init_model, calculate_model methods or be defined somewhere else.')
             elif p.min:
@@ -42,11 +77,12 @@ class parameter(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     name: str
-    default: Union[float, int, str, pint.Quantity, None]
-    min: Union[float, int, str, pint.Quantity, None]
-    max: Union[float, int, str, pint.Quantity, None]
-    comment: Union[str, dict[str, str], None] = None
-    
+    val: Union[float, list, int, str, pint.Quantity, None] = None
+    default: Union[float, list, int, str, pint.Quantity, None]
+    min: Union[float, int, str, pint.Quantity, None] = None
+    max: Union[float, int, str, pint.Quantity, None] = None
+    description: Union[str, dict[str, str], None] = None
+    reference: Union[str, dict[str, str], None] = None
 
 class SimModel(ABC):
     """Class containing a simulation model.
@@ -69,21 +105,40 @@ class SimModel(ABC):
     description=''
 
     # needed parameters for the model:
-    #TODO add parameter datacontainer class with min max value
-    parameters=[]
+    parameters={}
 
-    def __init__(self, name, init_arg=None, **model_params):
-        super().__init__()
-        self.name = name
+    #def __init__(self, name, init_arg=None, **model_params):
+    #    super().__init__()
+    '''self.name = name
         self.ureg=pint.UnitRegistry()
-        self.params= model_params
+        # check and create parameter dict:
+        self.params =  model_params
+        for _, p in self.__class__.parameters.items():
+            if p.name not in model_params and p.default == None:
+                raise Exception(
+                    f\'''The parameter {p.name} is not defined. 
+                    it mus be passed as parameter in the __init__ method or be defined as default parameter in the class definition.\'''
+                    )
+            elif p.name not in model_params and p.default != None:
+                self.params[p.name]= p.default
+        undefined_params= [p for p in model_params if p not in self.__class__.parameters]
+        if len(undefined_params) >0:
+            raise Warning(
+                f\'''The parameters {list(undefined_params)} are not defined for this model. No validy check possible for this parameter. 
+                Please check if the parameter name is correct and if it is defined in the model class definition.\'''
+                )
+
+        
+        
         self.location = 'GLO'
         #self.init_model(init_arg, **model_params)
         #self.define_flows()
         self.converges= False
-
+'''
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
+        cls.__init__ = wrap_init(cls.__init__)
+
         if 'init_model' in cls.__dict__:
             cls.init_model = update_params(cls.init_model)
         if 'calculate_model' in cls.__dict__:
@@ -99,7 +154,6 @@ class SimModel(ABC):
         Args:
             **model_params: Parameters for the simulation Model. 
         '''
-        
         self.params= self.params|model_params
 
     
